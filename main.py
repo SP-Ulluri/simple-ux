@@ -8,10 +8,11 @@ from googleapiclient.errors import HttpError
 from email.mime.text import MIMEText
 import streamlit as st
 import json
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+import tempfile
 
 os.environ['OPENAI_API_KEY'] = st.secrets["openai_api_key"]
 LLM_MODEL_NAME = "gpt-4-0125-preview"
@@ -56,12 +57,13 @@ def get_llm_output(context, instructions, model_name, temperature):
 
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
-current_dir = os.path.dirname(os.path.realpath(__file__))
-credentials_path = os.path.join(current_dir, 'credentials.json')
+# current_dir = os.path.dirname(os.path.realpath(__file__))
+# credentials_path = os.path.join(current_dir, 'credentials.json')
 
 # Initialize session state
 if 'credentials' not in st.session_state:
     st.session_state.credentials = None
+
 
 
 def authenticate():
@@ -73,8 +75,14 @@ def authenticate():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
+            credentials = json.loads(st.secrets["gcp"]["credentials"])
+            temp_dir = tempfile.gettempdir()
+            credentials_file_path = os.path.join(temp_dir, "credentials.json")
+            with open(credentials_file_path, "w") as f:
+                json.dump(credentials, f)
+            flow = InstalledAppFlow.from_client_secrets_file(credentials_file_path, SCOPES)
             creds = flow.run_local_server(port=0)
+            os.remove(credentials_file_path)
         st.session_state.credentials = creds.to_json()
     return creds
 
