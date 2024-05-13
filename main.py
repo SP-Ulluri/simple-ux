@@ -81,7 +81,7 @@ def authenticate():
             with open(credentials_file_path, "w") as f:
                 json.dump(credentials, f)
             flow = InstalledAppFlow.from_client_secrets_file(credentials_file_path, SCOPES)
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_local_server(port=0, launch_browser=True)
             os.remove(credentials_file_path)
         st.session_state.credentials = creds.to_json()
     return creds
