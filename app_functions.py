@@ -170,7 +170,12 @@ def authenticate():
     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
     creds = None
 
-    if 'credentials' in st.session_state:
+    # Initialize session state if not already present
+    if 'credentials' not in st.session_state:
+        st.session_state['credentials'] = None
+
+    # Load credentials from session state if available
+    if st.session_state['credentials'] is not None:
         creds_dict = json.loads(st.session_state['credentials'])  # Convert string to dictionary
         creds = Credentials.from_authorized_user_info(creds_dict, SCOPES)
 
