@@ -166,8 +166,8 @@ def open_page(url):
     """ % (url)
     html(open_script)
 
-
-SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
+def authenticate():
+    SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
     creds = None
 
     if 'credentials' in st.session_state:
