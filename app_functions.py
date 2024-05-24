@@ -12,6 +12,7 @@ from langchain.prompts import ChatPromptTemplate
 import tempfile
 from datetime import datetime, timedelta
 import base64
+from google_auth_oauthlib.flow import Flow
 
 os.environ['OPENAI_API_KEY'] = st.secrets["openai_api_key"]
 LLM_MODEL_NAME = "gpt-4o"
@@ -167,23 +168,61 @@ def open_page(url):
 
 
 def authenticate():
-    SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
-    creds = None
-    if st.session_state.credentials is not None:
-        creds_dict = json.loads(st.session_state.credentials)  # Convert string to dictionary
-        creds = Credentials.from_authorized_user_info(creds_dict, SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            credentials = json.loads(st.secrets["gcp"]["credentials"])
-            temp_dir = tempfile.gettempdir()
-            credentials_file_path = os.path.join(temp_dir, "credentials.json")
-            with open(credentials_file_path, "w") as f:
-                json.dump(credentials, f)
-            flow = InstalledAppFlow.from_client_secrets_file(credentials_file_path, SCOPES)
-            creds = flow.run_local_server(port=0)
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
+creds = None
+
+# Check if credentials are in session state
+if st.session_state.get('credentials'):
+    creds_dict = json.loads(st.session_state.credentials)
+    creds = Credentials.from_authorized_user_info(creds_dict, SCOPES)
+
+# If there are no valid credentials, initiate the OAuth flow
+if not creds or not creds.valid:
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        # Load credentials from secrets
+        credentials = json.loads(st.secrets["gcp"]["credentials"])
+        temp_dir = tempfile.gettempdir()
+        credentials_file_path = os.path.join(temp_dir, "credentials.json")
+        with open(credentials_file_path, "w") as f:
+            json.dump(credentials, f)
+
+        flow = Flow.from_client_secrets_file(credentials_file_path, SCOPES, redirect_uri='http://localhost:8501')
+        auth_url, _ = flow.authorization_url(prompt='consent')
+
+        # Direct user to the auth URL
+        st.write(f'Please go to this URL to authorize the application: [Authorize]({auth_url})')
+
+        code = st.text_input('Enter the authorization code here:')
+
+        if code:
+            flow.fetch_token(code=code)
+            creds = flow.credentials
+            st.session_state.credentials = creds.to_json()
             os.remove(credentials_file_path)
-        st.session_state.credentials = creds.to_json()
-    st.success("Gmail account successfully connected!")
-    return creds
+
+st.success("Gmail account successfully connected!")
+return creds
+    
+# def authenticate():
+#     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
+#     creds = None
+#     if st.session_state.credentials is not None:
+#         creds_dict = json.loads(st.session_state.credentials)  # Convert string to dictionary
+#         creds = Credentials.from_authorized_user_info(creds_dict, SCOPES)
+#     if not creds or not creds.valid:
+#         if creds and creds.expired and creds.refresh_token:
+#             creds.refresh(Request())
+#         else:
+#             credentials = json.loads(st.secrets["gcp"]["credentials"])
+#             temp_dir = tempfile.gettempdir()
+#             credentials_file_path = os.path.join(temp_dir, "credentials.json")
+#             with open(credentials_file_path, "w") as f:
+#                 json.dump(credentials, f)
+#             flow = InstalledAppFlow.from_client_secrets_file(credentials_file_path, SCOPES)
+#             creds = flow.run_local_server(port=0)
+#             os.remove(credentials_file_path)
+#         st.session_state.credentials = creds.to_json()
+#     st.success("Gmail account successfully connected!")
+#     return creds
