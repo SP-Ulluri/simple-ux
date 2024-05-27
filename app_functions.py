@@ -103,8 +103,12 @@ def get_summary_info_only(email_details):
     chain = prompt | llm
     return chain.invoke({"input": email_context}).content
 
+
 def fetch_gmail_data(credentials, num_days):
-    service = build('gmail', 'v1', credentials=credentials)
+    # Deserialize the credentials JSON string back to a Credentials object
+    creds = Credentials.from_authorized_user_info(json.loads(credentials))
+
+    service = build('gmail', 'v1', credentials=creds)
     try:
         # Calculate date num_days ago
         date_days_ago = (datetime.utcnow() - timedelta(days=num_days)).strftime('%Y/%m/%d')
@@ -172,7 +176,7 @@ def fetch_gmail_data(credentials, num_days):
 
     except HttpError as e:
         print(f'An error occurred: {e}')
-        return None, None
+        return None, None, None, None
 
 
 def hide_st_ui():
