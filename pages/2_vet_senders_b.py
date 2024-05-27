@@ -1,5 +1,5 @@
 import streamlit as st
-from app_functions import hide_st_ui, fetch_gmail_data
+from app_functions import hide_st_ui, fetch_gmail_data, get_email_category
 from streamlit_extras.switch_page_button import switch_page
 
 hide_st_ui()
@@ -10,7 +10,7 @@ st.divider()
 
 if 'num_days' not in st.session_state:
     st.session_state.num_days = 5
-#
+
 # if st.session_state.num_days == 0:
 #     with st.form(key="num_days_form"):
 #         st.session_state.num_days = st.slider("How many days of your inbox should we audit?", 1, 30, 5)
@@ -39,9 +39,28 @@ if 'unread_emails_details' not in st.session_state:
 if 'show_auditing_spinner' not in st.session_state:
     st.session_state.show_auditing_spinner = True
 
+if 'newsletter_unread_emails' not in st.session_state:
+    st.session_state.newsletter_unread_emails = []
+
+if 'info_only_unread_emails' not in st.session_state:
+    st.session_state.info_only_unread_emails = []
+
+if 'actionable_unread_emails' not in st.session_state:
+    st.session_state.actionable_unread_emails = []
+
 if st.session_state.show_auditing_spinner:
     with st.spinner(f"Auditing the last {st.session_state.num_days} days of emails..."):
         st.session_state.senders, st.session_state.read_senders, st.session_state.unread_senders, st.session_state.unread_emails_details = fetch_gmail_data(credentials=st.session_state.credentials, num_days=st.session_state.num_days)
+        for index, email in enumerate(st.session_state.unread_emails_details):
+            email_category = get_email_category(email)
+            if email_category == 'newsletter':
+                st.session_state.newsletter_unread_emails.append(email)
+            elif email_category == 'info_only':
+                st.session_state.info_only_unread_emails.append(email)
+            elif email_category == 'actionable':
+                st.session_state.actionable_unread_emails.append(email)
+            elif email_category not in ['actionable', 'info_only', 'newsletter']:
+                st.write(f"Unexpected value returned: {email_category}")
 st.session_state.show_auditing_spinner = False
 
 senders_to_vet = st.session_state.senders - st.session_state.read_senders

@@ -36,5 +36,5 @@ with col2:
 
 st.write("**Next, we'll show you your email Newsfeed. Click the button to proceed.**")
 if st.button("Go to Newsfeed", type='primary'):
-    switch_page("newsfeed")
+    switch_page("info_only_items")
 
