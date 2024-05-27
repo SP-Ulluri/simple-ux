@@ -189,14 +189,17 @@ def hide_st_ui():
     st.markdown(hide_st_ui_markdown, unsafe_allow_html=True)
 
 
+# def open_page(url):
+#     open_script = """
+#         <script type="text/javascript">
+#             window.open('%s', '_blank').focus();
+#         </script>
+#     """ % (url)
+#     html(open_script)
+
 def open_page(url):
-    open_script = """
-        <script type="text/javascript">
-            window.open('%s', '_blank').focus();
-        </script>
-    """ % (url)
-    html(open_script)
-    
+    st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">', unsafe_allow_html=True)
+
 
 def authenticate():
     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
