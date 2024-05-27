@@ -1,5 +1,6 @@
 from streamlit.components.v1 import html
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import os
@@ -12,15 +13,18 @@ from langchain.prompts import ChatPromptTemplate
 import tempfile
 from datetime import datetime, timedelta
 import base64
-from google_auth_oauthlib.flow import Flow
 
 os.environ['OPENAI_API_KEY'] = st.secrets["openai_api_key"]
 LLM_MODEL_NAME = "gpt-4o"
 LLM_TEMPERATURE = 0
 CATEGORISE_INSTRUCTIONS = """
-You are an executive assistant for a busy user who struggles to stay on top of their emails.
-Your only job is to read the contents of an email and categorise it into "Information Only" (if the email contains no action items but is simply an information only email) or "Actionable" (if the email does contain action items or clear call to actions that you deem the user needs to attend to).
-You simply output 0 if the email is "Information Only" or 1 if the email is "Actionable". Do not output anything else.
+You are an executive assistant for a busy user who struggles to stay on top of their emails.\n
+Your only job is to read the contents of an email and categorise it into one of three types:\n
+- info_only (if the email contains no action items but is simply an information only email)\n
+- actionable (if the email does contain action items or clear call to actions that you deem the user needs to attend to)\n
+- newsletter (if the email is a newsletter as inferred from the content, sender, metadata etc.)\n
+You must output only info_only, actionable or newsletter in your response.\n
+Do not output anything else.
 """
 
 
@@ -40,7 +44,7 @@ def get_email_category(email_details):
     return str(chain.invoke({"input": email_context}).content)
 
 
-SUMMARISE_INSTRUCTIONS = """
+SUMMARISE_ACTIONS_INSTRUCTIONS = """
 You are an executive assistant for a busy user who struggles to stay on top of their emails.
 
 Your job is to summarise the content and action items of the email you are given - make it short, punchy and action-oriented.
@@ -56,14 +60,14 @@ Format any clickable links or "call to actions" in each email's action items as 
 """
 
 
-def get_ai_summary(email_details):
+def get_summary_actions(email_details):
     email_context = f"From: {email_details.get('From')}\n\nSubject: {email_details.get('Subject')}\n\nBody: {email_details.get('Body')}"
     llm = ChatOpenAI(model=LLM_MODEL_NAME, temperature=LLM_TEMPERATURE)
     prompt = ChatPromptTemplate.from_messages(
         [
             (
                 "system",
-                SUMMARISE_INSTRUCTIONS,
+                SUMMARISE_ACTIONS_INSTRUCTIONS,
             ),
             ("human", "{input}"),
         ]
@@ -71,6 +75,33 @@ def get_ai_summary(email_details):
     chain = prompt | llm
     return chain.invoke({"input": email_context}).content
 
+
+SUMMARISE_INFO_ONLY_INSTRUCTIONS = """
+You are an executive assistant for a busy user who struggles to stay on top of their emails.
+
+Your job is to summarise the content of the email you are given - make it short, punchy and action-oriented.
+
+Your response will be displayed to the user in HTML, so your response should always be valid HTML.
+
+Your response should have the following structure:
+- <h3> Section header "Summary" - short summary of the email content, with information about the sender if relevant, written as if you are a personal assistant explaining to the user as simply as possible ONLY the information they need to know.
+"""
+
+
+def get_summary_info_only(email_details):
+    email_context = f"From: {email_details.get('From')}\n\nSubject: {email_details.get('Subject')}\n\nBody: {email_details.get('Body')}"
+    llm = ChatOpenAI(model=LLM_MODEL_NAME, temperature=LLM_TEMPERATURE)
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                SUMMARISE_INFO_ONLY_INSTRUCTIONS,
+            ),
+            ("human", "{input}"),
+        ]
+    )
+    chain = prompt | llm
+    return chain.invoke({"input": email_context}).content
 
 def fetch_gmail_data(credentials, num_days):
     service = build('gmail', 'v1', credentials=credentials)
@@ -165,50 +196,7 @@ def open_page(url):
         </script>
     """ % (url)
     html(open_script)
-
-# def authenticate():
-#     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
-#     creds = None
-
-#     # Initialize session state if not already present
-#     if 'credentials' not in st.session_state:
-#         st.session_state['credentials'] = None
-
-#     # Load credentials from session state if available
-#     if st.session_state['credentials'] is not None:
-#         creds_dict = json.loads(st.session_state['credentials'])  # Convert string to dictionary
-#         creds = Credentials.from_authorized_user_info(creds_dict, SCOPES)
-
-#     if not creds or not creds.valid:
-#         if creds and creds.expired and creds.refresh_token:
-#             creds.refresh(Request())
-#         else:
-#             credentials = json.loads(st.secrets["gcp"]["credentials"])
-#             temp_dir = tempfile.gettempdir()
-#             credentials_file_path = os.path.join(temp_dir, "credentials.json")
-#             with open(credentials_file_path, "w") as f:
-#                 json.dump(credentials, f)
-#             flow = Flow.from_client_secrets_file(credentials_file_path, SCOPES)
-#             flow.redirect_uri = 'https://simple-ux.streamlit.app/'
-
-#             auth_url, _ = flow.authorization_url(prompt='consent')
-#             st.write(f"Go to the following URL: [Authorize]({auth_url})")
-
-#             auth_code = st.text_input("Enter the authorization code: ")
-
-#             if auth_code:
-#                 flow.fetch_token(code=auth_code)
-#                 creds = flow.credentials
-#                 st.session_state['credentials'] = creds.to_json()
-
-#             os.remove(credentials_file_path)
-
-#     if creds and creds.valid:
-#         st.success("Gmail account successfully connected!")
-#     else:
-#         st.error("Authentication failed.")
-
-#     return creds
+    
 
 def authenticate():
     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
@@ -226,30 +214,9 @@ def authenticate():
             with open(credentials_file_path, "w") as f:
                 json.dump(credentials, f)
             flow = InstalledAppFlow.from_client_secrets_file(credentials_file_path, SCOPES)
-            creds = flow.run_local_server(port=19595)
+            creds = flow.run_local_server(port=0)
             os.remove(credentials_file_path)
         st.session_state.credentials = creds.to_json()
     st.success("Gmail account successfully connected!")
     return creds
-    
-# def authenticate():
-#     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
-#     creds = None
-#     if st.session_state.credentials is not None:
-#         creds_dict = json.loads(st.session_state.credentials)  # Convert string to dictionary
-#         creds = Credentials.from_authorized_user_info(creds_dict, SCOPES)
-#     if not creds or not creds.valid:
-#         if creds and creds.expired and creds.refresh_token:
-#             creds.refresh(Request())
-#         else:
-#             credentials = json.loads(st.secrets["gcp"]["credentials"])
-#             temp_dir = tempfile.gettempdir()
-#             credentials_file_path = os.path.join(temp_dir, "credentials.json")
-#             with open(credentials_file_path, "w") as f:
-#                 json.dump(credentials, f)
-#             flow = InstalledAppFlow.from_client_secrets_file(credentials_file_path, SCOPES)
-#             creds = flow.run_local_server(port=0)
-#             os.remove(credentials_file_path)
-#         st.session_state.credentials = creds.to_json()
-#     st.success("Gmail account successfully connected!")
-#     return creds
+
