@@ -23,4 +23,6 @@ else:
 
     st.session_state.info_only_email_index += 1
 
-    st.button(f"Proceed to next email", type='primary')
+    st.button(f"File and Archive", type='primary')
+    st.button(f"Reply", type='secondary')
+    st.button(f"Forward", type='secondary')
