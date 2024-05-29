@@ -34,7 +34,7 @@ with col1:
 with col2:
     st.error(f"We'll automatically archive email from:\n{archive_addresses_text}")
 
-st.write("**Next, we'll show you your email Newsfeed. Click the button to proceed.**")
-if st.button("Go to Newsfeed", type='primary'):
+st.write("**Next, we'll show you your Information Only emails. Click the button to proceed.**")
+if st.button("Go to Information Only Emails", type='primary'):
     switch_page("info_only_items")
 
