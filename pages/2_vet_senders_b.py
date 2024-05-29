@@ -72,7 +72,7 @@ with sender_filtering_form_container.form(key="sender_filtering"):
         "The following email addresses have tried to message you recently. Use the toggle buttons to decide if you want to hear from them or not, and we'll take care of the rest.")
 
     for sender in senders_to_vet:
-        st.session_state.toggle_states[sender] = st.toggle(label=sender, key=sender)
+        st.session_state.toggle_states[sender] = st.toggle(label=sender, key=sender, value=True)
 
     submitted = st.form_submit_button("Submit choices", type="primary")
     if submitted:
