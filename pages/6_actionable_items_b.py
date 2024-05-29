@@ -19,4 +19,6 @@ else:
 
     st.session_state.email_index += 1
 
-    st.button(f"Proceed to next email", type='primary')
+    st.button(f"Reply", type='primary')
+    st.button(f"Forward", type='secondary')
+    st.button(f"Snooze", type='secondary')
