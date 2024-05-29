@@ -18,7 +18,9 @@ else:
     st.progress(float((st.session_state.info_only_email_index+1)/num_info_only_emails), text=None)
     st.divider()
 
-    st.write(get_summary_info_only(st.session_state.info_only_unread_emails[st.session_state.info_only_email_index]), unsafe_allow_html=True)
+    email_to_display = st.session_state.info_only_unread_emails[st.session_state.info_only_email_index]
+    st.write(f"Email from: {email_to_display.get('From')}")
+    st.write(get_summary_info_only(email_to_display), unsafe_allow_html=True)
     st.write("<br>", unsafe_allow_html=True)
 
     st.session_state.info_only_email_index += 1
