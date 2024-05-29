@@ -5,8 +5,6 @@ import time
 
 hide_st_ui()
 
-NUM_DAYS = 5
-
 st.header("Part 1 of 3: Vetting Your Contacts")
 st.progress(float(3/3), text=None)
 st.divider()
