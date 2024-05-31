@@ -6,7 +6,7 @@ import time
 hide_st_ui()
 
 st.header("Part 1 of 3: Vetting Your Contacts")
-st.progress(float(3/3), text=None)
+st.progress(float(3/3), text=f"{round(100*float(3/3))}%")
 st.divider()
 
 if 'show_preference_saving_spinner' not in st.session_state:
