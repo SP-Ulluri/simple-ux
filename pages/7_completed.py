@@ -21,4 +21,3 @@ with st.container(height=500):
             st.write(f"**Newsletter Content:** {email.get('Body')}")
 
 st.write("You can now exit this page.")
-
