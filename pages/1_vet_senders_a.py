@@ -59,8 +59,8 @@ if st.button("Begin Sender Audit", type="primary"):
         while st.session_state.result_container['data'] is None:
             time.sleep(0.1)
 
-        st.write("--- %s seconds ---" % (time.time() - st.session_state.start_time))
-        st.write("--- %s seconds ---" % (time.time() - st.session_state.button_press_time))
+        # st.write("--- %s seconds ---" % (time.time() - st.session_state.start_time))
+        # st.write("--- %s seconds ---" % (time.time() - st.session_state.button_press_time))
         # Once done, retrieve the result
         result = st.session_state.result_container['data']
 
