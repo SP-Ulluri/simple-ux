@@ -104,8 +104,8 @@ def get_summary_info_only(email_details):
     return chain.invoke({"input": email_context}).content
 
 
-def fetch_gmail_data(credentials, num_days):
-    # Deserialize the credentials JSON string back to a Credentials object
+def fetch_gmail_data(credentials, num_days, result_container):
+    # Deserialise the credentials JSON string back to a Credentials object
     creds = Credentials.from_authorized_user_info(json.loads(credentials))
 
     service = build('gmail', 'v1', credentials=creds)
@@ -172,11 +172,26 @@ def fetch_gmail_data(credentials, num_days):
             if not page_token:
                 break
 
-        return senders, read_senders, unread_senders, email_details
+        newsletter_unread_emails = []
+        info_only_unread_emails = []
+        actionable_unread_emails = []
+
+        for index, email in enumerate(email_details):
+            email_category = get_email_category(email)
+            if email_category == 'newsletter':
+                newsletter_unread_emails.append(email)
+            elif email_category == 'info_only':
+                info_only_unread_emails.append(email)
+            elif email_category == 'actionable':
+                actionable_unread_emails.append(email)
+            elif email_category not in ['actionable', 'info_only', 'newsletter']:
+                st.write(f"Unexpected value returned: {email_category}")
+
+        result_container['data'] = [senders, read_senders, unread_senders, newsletter_unread_emails, info_only_unread_emails, actionable_unread_emails]
 
     except HttpError as e:
         print(f'An error occurred: {e}')
-        return None, None, None, None
+        result_container['data'] = None
 
 
 def hide_st_ui():
