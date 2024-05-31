@@ -13,5 +13,3 @@ st.write("**This is where the Radically Simple approach really comes to the fore
 
 if st.button(f"Begin", type='primary'):
     switch_page("actionable_items_b")
-
-
